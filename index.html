@@ -1,2279 +1,1466 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>インサイダーゲーム Online</title>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エセ芸術家 ニューヨークへ行く Online</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        polarDark: '#0b1329',
+                        polarGlass: 'rgba(15, 23, 42, 0.85)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- PeerJS for P2P Online -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+        
+        body {
+            font-family: 'Zen Maru Gothic', 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #0b1329 0%, #1e1b4b 50%, #2a083b 100%);
+            color: #f0f9ff;
+            user-select: none;
+            touch-action: manipulation;
+            min-height: 100vh;
+        }
 
-    :root {
-      --bg-color: #0d0d0d;
-      --panel-bg: #1a1a1a;
-      --card-bg: #242424;
-      --gold-main: #d4af37;
-      --gold-light: #f3e5ab;
-      --gold-dark: #AA771C;
-      --text-color: #f0f0f0;
-      --text-muted: #cccccc;
-      --danger-color: #e63946;
-      --success-color: #2a9d8f;
-      --border-gold: 1px solid rgba(212, 175, 55, 0.4);
-    }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
 
-    * {
-      box-sizing: border-box;
-    }
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-pop {
+            animation: fadeInScale 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
 
-    html {
-      font-size: clamp(18px, 4.5vw, 22px);
-    }
-
-    body {
-      font-family: 'Shippori Mincho', 'Hiragino Mincho ProN', serif;
-      background-color: var(--bg-color);
-      background-image: radial-gradient(
-        circle at 50% 30%,
-        #221d10 0%,
-        #0d0d0d 80%
-      );
-      color: var(--text-color);
-      margin: 0;
-      padding: clamp(10px, 3vw, 24px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      line-height: 1.5;
-    }
-
-    .main-container {
-      max-width: 920px;
-      width: 100%;
-      background: var(--panel-bg);
-      border: var(--border-gold);
-      border-radius: 12px;
-      padding: clamp(16px, 4vw, 32px);
-      box-shadow:
-        0 10px 30px rgba(0,0,0,0.8),
-        0 0 15px rgba(212, 175, 55, 0.15);
-    }
-
-    .title-area {
-      text-align: center;
-      margin-bottom: 24px;
-      border-bottom: var(--border-gold);
-      padding-bottom: 16px;
-    }
-
-    h1 {
-      font-size: clamp(1.8rem, 6vw, 2.6rem);
-      margin: 0;
-      color: var(--gold-main);
-      text-shadow:
-        0 2px 4px rgba(0,0,0,0.8),
-        0 0 10px rgba(212, 175, 55, 0.3);
-      letter-spacing: 0.08em;
-    }
-
-    .subtitle {
-      font-size: clamp(0.9rem, 3vw, 1.15rem);
-      color: var(--text-muted);
-      margin-top: 8px;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: var(--border-gold);
-      border-radius: 8px;
-      padding: clamp(14px, 3.5vw, 24px);
-      margin-bottom: 20px;
-      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-    }
-
-    .card-header {
-      color: var(--gold-light);
-      font-weight: bold;
-      font-size: clamp(1.2rem, 4vw, 1.45rem);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-bottom: 1px dashed rgba(212, 175, 55, 0.2);
-      padding-bottom: 8px;
-    }
-
-    label {
-      display: block;
-      font-size: clamp(1.05rem, 3.5vw, 1.25rem);
-      color: var(--gold-light);
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-
-    input[type="text"],
-    select {
-      width: 100%;
-      padding: clamp(12px, 3vw, 16px);
-      border-radius: 8px;
-      border: 1px solid #555;
-      background: #111;
-      color: #fff;
-      font-family: inherit;
-      font-size: clamp(1.05rem, 3.5vw, 1.25rem);
-      margin-bottom: 16px;
-    }
-
-    button {
-      width: 100%;
-      background: linear-gradient(
-        135deg,
-        #d4af37 0%,
-        #aa771c 100%
-      );
-      color: #000;
-      border: none;
-      padding: clamp(14px, 3.5vw, 18px);
-      font-family: inherit;
-      font-weight: bold;
-      font-size: clamp(1.1rem, 3.8vw, 1.3rem);
-      border-radius: 8px;
-      cursor: pointer;
-      margin: 8px 0;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    }
-
-    button:disabled {
-      background: #444 !important;
-      color: #888 !important;
-      cursor: not-allowed;
-    }
-
-    .player-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 8px 16px;
-      border-radius: 20px;
-      background: #111;
-      border: 1px solid var(--gold-dark);
-      color: var(--gold-light);
-      margin: 6px;
-      font-size: clamp(1rem, 3.2vw, 1.2rem);
-      font-weight: bold;
-    }
-
-    .timer-display {
-      text-align: center;
-      font-size: clamp(3rem, 10vw, 4.5rem);
-      color: var(--gold-main);
-      font-weight: bold;
-      margin: 10px 0;
-    }
-
-    .info-highlight {
-      color: var(--gold-light);
-      font-weight: bold;
-      font-size: clamp(1.6rem, 5.5vw, 2.2rem);
-    }
-
-    .word-highlight {
-      color: var(--danger-color);
-      font-weight: bold;
-      font-size: clamp(1.8rem, 6vw, 2.6rem);
-      letter-spacing: 3px;
-      text-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
-      display: block;
-      margin-top: 8px;
-    }
-
-    .sticky-role-box {
-      background: rgba(26, 26, 26, 0.95);
-      border: 2px solid var(--gold-main);
-      border-radius: 8px;
-      padding: 12px 18px;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-      font-size: 1.2rem;
-    }
-
-    .action-btn-group {
-      display: grid;
-      grid-template-columns: repeat(
-        auto-fit,
-        minmax(240px, 1fr)
-      );
-      gap: 12px;
-    }
-
-    .action-btn-group button {
-      background: linear-gradient(
-        135deg,
-        #3a3a3a 0%,
-        #222 100%
-      );
-      color: var(--gold-light);
-      border: 1px solid var(--gold-dark);
-      margin: 0;
-    }
-
-    .vote-progress-container {
-      background: #111;
-      border: 1px solid var(--gold-dark);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .vote-status-list {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .status-badge {
-      font-size: clamp(0.9rem, 3vw, 1.1rem);
-      padding: 6px 14px;
-      border-radius: 16px;
-      background: #222;
-      border: 1px solid #555;
-      color: var(--text-muted);
-    }
-
-    .status-badge.done {
-      border-color: var(--success-color);
-      color: var(--gold-light);
-      background: rgba(42, 157, 143, 0.2);
-    }
-
-    .table-wrapper {
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    .result-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-      font-size: clamp(0.95rem, 3.2vw, 1.15rem);
-    }
-
-    .result-table th,
-    .result-table td {
-      border: 1px solid rgba(212, 175, 55, 0.3);
-      padding: clamp(8px, 2vw, 14px);
-      text-align: center;
-    }
-
-    .result-table th {
-      background: #111;
-      color: var(--gold-light);
-    }
-
-    .log-container {
-      background: #0a0a0a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      padding: 10px;
-      height: 90px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-  </style>
+        canvas {
+            touch-action: none;
+        }
+    </style>
 </head>
+<body class="min-h-screen text-slate-100 flex flex-col justify-between overflow-x-hidden">
 
-<body>
-
-<div class="main-container">
-
-  <div class="title-area">
-    <h1>🕵️ インサイダーゲーム</h1>
-    <div class="subtitle">
-      — ONLINE SECRET DEDUCTION GAME —
-    </div>
-  </div>
-
-  <!-- ロビー画面 -->
-  <div id="screen-lobby">
-
-    <div class="card">
-
-      <div class="card-header">
-        👤 プレイヤー情報の入力
-      </div>
-
-      <label>あなたのプレイヤー名</label>
-
-      <input
-        type="text"
-        id="input-name"
-        placeholder="例: 名探偵"
-      >
-
-      <label>合言葉（部屋名）</label>
-
-      <input
-        type="text"
-        id="input-room-code"
-        placeholder="例: room123"
-      >
-
-      <div style="display: flex; gap: 8px; margin-top: 8px;">
-
-        <button
-          id="btn-create"
-          onclick="joinAsHost()"
-        >
-          部屋を作る (ホスト)
-        </button>
-
-        <button
-          id="btn-join"
-          onclick="joinAsGuest()"
-          style="
-            background: linear-gradient(135deg, #555 0%, #333 100%);
-            color:#fff;
-          "
-        >
-          部屋に入る (ゲスト)
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- 待機室 -->
-  <div
-    id="screen-room"
-    style="display:none;"
-  >
-
-    <div class="card">
-
-      <div class="card-header">
-        🏰 参加待機ルーム
-        (<span id="room-name-display">---</span>)
-      </div>
-
-      <div style="margin-bottom: 10px; font-weight: bold;">
-        現在の参加者:
-      </div>
-
-      <div
-        id="player-list"
-        style="
-          display: flex;
-          flex-wrap: wrap;
-          gap: 4px;
-        "
-      ></div>
-
-    </div>
-
-    <div
-      id="host-panel"
-      style="display:none;"
-      class="card"
-    >
-
-      <div class="card-header">
-        👑 ホスト設定
-      </div>
-
-      <label>質問フェイズの時間制限</label>
-
-      <select id="select-question-time">
-
-        <option value="180">
-          3分
-        </option>
-
-        <option value="300" selected>
-          5分
-        </option>
-
-        <option value="420">
-          7分
-        </option>
-
-      </select>
-
-      <label>議論フェイズの時間制限</label>
-
-      <select id="select-discussion-time">
-
-        <option value="120">
-          2分
-        </option>
-
-        <option value="180" selected>
-          3分
-        </option>
-
-        <option value="300">
-          5分
-        </option>
-
-      </select>
-
-      <button
-        id="btn-start"
-        onclick="startGame()"
-      >
-        ゲームを開始する (3人〜8人)
-      </button>
-
-    </div>
-
-  </div>
-
-  <!-- 役職確認画面 -->
-  <div
-    id="screen-confirm"
-    style="display:none;"
-  >
-
-    <div
-      class="card"
-      style="text-align: center;"
-    >
-
-      <div
-        class="card-header"
-        style="justify-content: center;"
-      >
-        📜 あなたの役職と確認タイム
-      </div>
-
-      <div
-        style="
-          font-size: 1.1rem;
-          color: var(--text-muted);
-        "
-      >
-        あなたの役職:
-      </div>
-
-      <div
-        id="info-role"
-        class="info-highlight"
-        style="margin: 8px 0;"
-      >
-        -
-      </div>
-
-      <div
-        id="info-word-box"
-        style="
-          margin-top: 20px;
-          background: #111;
-          padding: 16px;
-          border-radius: 8px;
-          border: 1px solid var(--gold-dark);
-        "
-      >
-
-        <div
-          style="
-            font-size: 1.1rem;
-            color: var(--gold-light);
-            font-weight: bold;
-          "
-        >
-          秘密のお題
+    <!-- Header / Navbar -->
+    <header class="w-full p-4 md:p-5 glass-panel sticky top-0 z-40 border-b border-purple-500/20 flex justify-between items-center">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="location.reload()">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/30 border border-purple-200/30">
+                <span class="text-3xl">🗽</span>
+            </div>
+            <div>
+                <h1 class="font-black text-xl md:text-2xl tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-pink-300 via-purple-200 to-indigo-300">
+                    エセ芸術家 ニューヨークへ行く
+                </h1>
+                <p class="text-[10px] md:text-xs text-purple-300/70 font-mono tracking-widest uppercase">A Fake Artist Goes To New York - Online</p>
+            </div>
         </div>
 
-        <div
-          id="info-word"
-          class="word-highlight"
-        >
-          -
+        <div id="headerInfo" class="hidden flex items-center space-x-3">
+            <div id="roomBadge" class="bg-slate-900/90 border border-purple-500/30 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-mono font-bold text-purple-300 flex items-center gap-2 cursor-pointer hover:bg-slate-800 transition" onclick="copyRoomCode()">
+                <i class="fa-regular fa-copy"></i>
+                <span id="displayRoomCode">----</span>
+            </div>
+            <button id="soundToggleBtn" onclick="toggleSound()" class="w-10 h-10 rounded-full bg-slate-800/80 hover:bg-slate-700 border border-purple-500/30 flex items-center justify-center text-purple-300 text-base transition">
+                <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6 max-w-6xl flex-grow flex flex-col justify-center">
+
+        <!-- VIEW 1: LOBBY -->
+        <div id="viewLobby" class="space-y-6 max-w-2xl mx-auto w-full">
+            <div class="text-center space-y-3 my-2">
+                <div class="inline-block px-4 py-1.5 bg-pink-500/20 text-pink-300 rounded-full text-xs md:text-sm font-bold border border-pink-400/30 shadow-lg backdrop-blur-md">
+                    1枚のキャンバスに一筆ずつお絵かき！ 🎨
+                </div>
+                <h2 class="text-3xl md:text-5xl font-black text-white tracking-tight">正体を隠してお題を描け！</h2>
+                <p class="text-purple-200/80 text-xs md:text-sm max-w-lg mx-auto leading-relaxed">
+                    みんなでお題の絵を1本ずつ描いていきますが、1人だけお題を知らない「エセ芸術家」が紛れ込んでいます！
+                </p>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-3">
+                <label class="block text-xs font-bold uppercase tracking-wider text-purple-200">プレイヤー名（ニックネーム）</label>
+                <input type="text" id="playerNameInput" maxlength="10" placeholder="名前を入力してください" 
+                    class="w-full bg-slate-950/80 border border-purple-500/40 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:border-pink-400 transition font-bold text-lg placeholder-slate-600">
+            </div>
+
+            <div class="glass-panel rounded-3xl p-6 shadow-2xl space-y-3">
+                <label class="block text-xs font-bold uppercase tracking-wider text-purple-200">部屋の合言葉（部屋コード）</label>
+                <input type="text" id="joinRoomCodeInput" placeholder="例: fakeartist1" 
+                    class="w-full bg-slate-950/80 border border-purple-500/40 rounded-2xl px-5 py-3.5 text-white font-mono tracking-widest text-lg focus:outline-none focus:border-pink-400 transition placeholder-slate-600">
+                <p class="text-xs text-purple-300/60">※全員で同じ合言葉を入力してください (3人〜10人推奨)</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-panel rounded-3xl p-6 shadow-2xl hover:border-pink-400/60 transition flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="w-12 h-12 rounded-2xl bg-pink-500/20 text-pink-300 flex items-center justify-center text-2xl mb-2 border border-pink-400/30">
+                            <i class="fa-solid fa-plus"></i>
+                        </div>
+                        <h3 class="font-bold text-lg text-white">部屋を作る (ホスト)</h3>
+                    </div>
+                    <button id="btnCreateRoom" class="w-full bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 text-white font-black text-lg py-3.5 rounded-2xl shadow-lg shadow-pink-500/20 transition transform active:scale-95">
+                        部屋を作成
+                    </button>
+                </div>
+
+                <div class="glass-panel rounded-3xl p-6 shadow-2xl hover:border-indigo-400/60 transition flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-2xl mb-2 border border-indigo-400/30">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                        </div>
+                        <h3 class="font-bold text-lg text-white">部屋に入る (ゲスト)</h3>
+                    </div>
+                    <button id="btnJoinRoom" class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-600 hover:from-indigo-400 hover:to-purple-500 text-white font-black text-lg py-3.5 rounded-2xl shadow-lg shadow-indigo-500/20 transition transform active:scale-95">
+                        部屋に参加
+                    </button>
+                </div>
+            </div>
         </div>
 
-      </div>
+        <!-- VIEW 2: ROOM LOBBY -->
+        <div id="viewRoomLobby" class="hidden space-y-5 max-w-2xl mx-auto w-full">
+            <div class="glass-panel rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
+                <div class="flex justify-between items-center border-b border-purple-500/20 pb-4">
+                    <div>
+                        <span class="text-xs font-bold text-purple-400 tracking-wider uppercase">LOBBY ROOM</span>
+                        <h2 class="text-2xl md:text-3xl font-black text-white flex items-center gap-2">
+                            合言葉: <span id="lobbyRoomCode" class="font-mono text-pink-300">----</span>
+                        </h2>
+                    </div>
+                    <button onclick="copyRoomCode()" class="bg-slate-800/80 hover:bg-slate-700 text-purple-300 text-xs md:text-sm font-bold px-4 py-2 rounded-2xl border border-purple-500/30 flex items-center gap-2 transition">
+                        <i class="fa-regular fa-copy"></i> コピー
+                    </button>
+                </div>
 
-      <div
-        style="
-          margin-top: 24px;
-          font-size: 1.15rem;
-          color: var(--gold-light);
-        "
-      >
-        自動開始まで:
-        <span
-          id="confirm-timer"
-          style="
-            font-weight:bold;
-            font-size:1.4rem;
-          "
-        >
-          20
-        </span>
-        秒
-      </div>
+                <!-- Host Settings Box in Lobby -->
+                <div id="hostLobbySettings" class="hidden bg-slate-950/80 rounded-2xl p-4 border border-purple-500/30 space-y-3">
+                    <label class="block text-xs font-bold text-pink-300 uppercase tracking-wider">【出題設定 (ホスト専用)】</label>
+                    <div id="lobbyGenreSelectBox">
+                        <span class="block text-[11px] font-bold text-purple-200 mb-1">使用ジャンル (各50題・計300題)</span>
+                        <select id="lobbyGenreSelect" onchange="updateLobbyTopicSettings()" class="w-full bg-slate-900 border border-purple-500/40 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-pink-400">
+                            <option value="動物・生き物">🦁 動物・生き物 (50題)</option>
+                            <option value="食べ物・料理">🍔 食べ物・料理 (50題)</option>
+                            <option value="乗り物・建物">🚗 乗り物・建物 (50題)</option>
+                            <option value="日用品・道具">✂️ 日用品・道具 (50題)</option>
+                            <option value="キャラクター・有名人">⭐ キャラクター・有名人 (50題)</option>
+                            <option value="スポーツ・趣味">⚽ スポーツ・趣味 (50題)</option>
+                            <option value="RANDOM_ALL" selected>🎲 全ジャンルから完全ランダム</option>
+                        </select>
+                    </div>
+                </div>
 
+                <!-- Player Pen Color Selection Box -->
+                <div class="bg-slate-950/80 rounded-2xl p-4 border border-purple-500/30 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-xs font-bold text-purple-200 uppercase tracking-wider">マイペンカラー選択</label>
+                        <span class="text-[11px] text-purple-300/70">※他プレイヤーと重複不可</span>
+                    </div>
+                    <div id="lobbyColorPalette" class="flex flex-wrap gap-2.5 pt-1"></div>
+                </div>
+
+                <!-- Rules Box -->
+                <div class="bg-slate-950/60 rounded-2xl p-4 border border-purple-500/20 text-xs md:text-sm text-purple-100 space-y-1.5 leading-relaxed">
+                    <div class="font-bold text-pink-300">【ゲーム概要】</div>
+                    <div>・ホストを含む全員がプレイヤー（絵を描く人）として参加します。</div>
+                    <div>・ゲーム開始時、お題が自動選出され、描く順番と1名の「エセ（✕）」役職が完全ランダム選出されます。</div>
+                    <div>・全員で1枚のキャンバスに1ターン1本ずつ線を足し、2周（合計2画ずつ）描きます。</div>
+                    <div>・追放判定は【半数以上（50%以上）の票】を獲得した人が吊られます。</div>
+                    <div>・エセ芸術家が吊られた場合、【逆転タイム】に入り通話で口頭回答します！</div>
+                </div>
+
+                <!-- Player List -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-xs font-bold text-purple-200">
+                        <span>参加プレイヤー (<span id="playerCount">0</span>名)</span>
+                        <span class="text-purple-400/70">※3名以上でプレイ可能</span>
+                    </div>
+                    <div id="playerList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1"></div>
+                </div>
+
+                <div class="pt-2">
+                    <button id="startGameBtn" onclick="startGame()" class="hidden w-full bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-400 hover:to-indigo-400 text-white font-black text-lg py-4 rounded-2xl shadow-xl shadow-pink-500/30 transition transform active:scale-95">
+                        ゲームを開始する 🚀
+                    </button>
+                    <p id="waitingForHostMsg" class="text-center text-purple-300/70 text-xs font-medium animate-pulse">
+                        ホストが対戦を開始するのを待っています...
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: GAME PLAYING -->
+        <div id="viewGame" class="hidden space-y-5 w-full max-w-5xl mx-auto">
+            <!-- Game Status Header -->
+            <div class="glass-panel p-4 rounded-3xl border border-purple-500/20 space-y-3">
+                <div class="flex flex-wrap justify-between items-center gap-3">
+                    <div class="flex items-center space-x-3">
+                        <div id="phaseBadge" class="bg-pink-500/20 text-pink-300 px-3.5 py-1.5 rounded-2xl border border-pink-400/40 text-xs font-mono font-bold shadow">
+                            PHASE: SETUP
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-purple-300/70 block uppercase font-bold">あなたの役職</span>
+                            <span id="myRoleBadge" class="font-black text-base md:text-lg text-white">----</span>
+                        </div>
+                    </div>
+
+                    <!-- Round / Stroke info -->
+                    <div id="roundIndicator" class="bg-slate-900/90 border border-purple-500/30 px-3.5 py-1.5 rounded-2xl text-xs font-bold text-purple-200">
+                        周回: <span id="currentRoundText" class="text-pink-300 font-mono text-sm">1</span> / 2 周目
+                    </div>
+                </div>
+
+                <!-- Score Board Header -->
+                <div class="border-t border-purple-500/20 pt-2.5">
+                    <div class="text-[10px] font-bold text-purple-300 uppercase tracking-wider mb-1.5">現在のスコア</div>
+                    <div id="headerScoreList" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
+            <!-- Topic / Category Info Banner -->
+            <div id="topicCard" class="glass-panel rounded-3xl p-5 text-center shadow-2xl border border-purple-500/30 bg-slate-950/80 space-y-2">
+                <span id="topicCategoryBadge" class="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-full text-xs font-bold">
+                    ジャンル: 未定
+                </span>
+                <h2 id="questionTopic" class="text-2xl md:text-4xl font-black text-white">「------」</h2>
+                <p id="topicGuide" class="text-xs text-purple-300/70 font-medium"></p>
+            </div>
+
+            <!-- PHASE B: DRAWING PHASE (Shared Canvas) -->
+            <div id="subViewDrawing" class="hidden space-y-4">
+                <div class="glass-panel p-4 md:p-6 rounded-3xl border border-purple-500/30 space-y-4">
+                    
+                    <!-- Turn Status Bar -->
+                    <div class="flex flex-wrap justify-between items-center bg-slate-950/80 p-3 rounded-2xl border border-purple-500/20 gap-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-purple-300">現在のターン:</span>
+                            <span id="currentTurnPlayerName" class="font-black text-base text-pink-300">--</span>
+                            <span id="playerColorIndicator" class="w-4 h-4 rounded-full border border-white inline-block"></span>
+                        </div>
+                        <div class="text-xs text-purple-300/80 font-medium" id="drawInstructionText">
+                            ※1回の順番で描けるのは「一筆（1つの連続した線）」のみです。
+                        </div>
+                    </div>
+
+                    <!-- Canvas Box -->
+                    <div class="flex justify-center items-center w-full">
+                        <div class="relative w-full max-w-3xl aspect-[4/3] bg-slate-950 border-2 border-purple-500/40 rounded-3xl overflow-hidden shadow-2xl cursor-crosshair">
+                            <canvas id="sharedCanvas" width="720" height="540" class="w-full h-full block"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Actions for Active Drawer -->
+                    <div id="drawerControls" class="hidden space-y-2 max-w-lg mx-auto">
+                        <div class="flex gap-2">
+                            <button onclick="undoCurrentStroke()" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-purple-300 font-bold text-xs py-3 rounded-xl border border-purple-500/30 transition flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-rotate-left"></i> 描き直す (クリア)
+                            </button>
+                            <button onclick="confirmStroke()" id="btnConfirmStroke" disabled class="w-1/2 bg-gradient-to-r from-pink-500 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 opacity-50 cursor-not-allowed text-white font-black text-sm py-3 rounded-xl shadow transition transform active:scale-95">
+                                この一筆を提出 筆を渡す ➔
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Player Order Color Badges -->
+                    <div class="border-t border-purple-500/20 pt-3">
+                        <div class="text-[10px] font-bold text-purple-300 uppercase tracking-wider mb-2">描き手の色一覧</div>
+                        <div id="playerColorList" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE C: DISCUSSION & VOTING PHASE -->
+            <div id="subViewVoting" class="hidden glass-panel p-6 rounded-3xl border border-purple-500/30 space-y-6 text-center">
+                <div class="space-y-2">
+                    <span class="px-3.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-full text-xs font-bold">
+                        議論 ＆ 投票フェーズ
+                    </span>
+                    <h3 class="text-2xl md:text-3xl font-black text-white">エセ芸術家は誰だ！？</h3>
+                    <p class="text-xs text-purple-200/80">完成した1枚の絵を見ながら全員で議論し、怪しい人に投票してください。（過半数＝50%以上の票で追放）</p>
+                </div>
+
+                <!-- Finished Canvas Display -->
+                <div class="flex justify-center">
+                    <div class="w-full max-w-xl aspect-[4/3] bg-slate-950 border-2 border-purple-500/40 rounded-3xl overflow-hidden shadow-2xl p-1">
+                        <img id="voteCanvasImage" src="" class="w-full h-full object-contain">
+                    </div>
+                </div>
+
+                <!-- Voting Buttons -->
+                <div id="votingControls" class="space-y-3 max-w-xl mx-auto">
+                    <div class="text-xs font-bold text-purple-300">【投票先を選んでください】</div>
+                    <div id="voteCandidatesList" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
+                </div>
+
+                <!-- Voting Progress Status -->
+                <div class="bg-slate-950/60 p-4 rounded-2xl border border-purple-500/20 max-w-xl mx-auto">
+                    <div class="text-xs font-bold text-purple-300 mb-2">投票状況 (<span id="voteSubmittedCount">0</span>/<span id="totalVotersCount">0</span>)</div>
+                    <div id="votingStatusList" class="flex flex-wrap justify-center gap-2"></div>
+                </div>
+            </div>
+
+            <!-- PHASE D: FAKE ARTIST GUESS PHASE (口頭逆転タイム) -->
+            <div id="subViewFakeGuess" class="hidden glass-panel p-6 md:p-8 rounded-3xl border border-amber-500/40 space-y-5 text-center max-w-lg mx-auto bg-slate-950/90">
+                <div class="text-5xl animate-bounce">🚨</div>
+                <h3 class="text-2xl font-black text-amber-300">逆転タイム発動！</h3>
+                <p id="fakeGuessNotice" class="text-xs text-purple-200/80 leading-relaxed">
+                    エセ芸術家が追放されました！<br>
+                    <strong class="text-white text-sm">【エセ芸術家は通話・口頭でお題を回答してください！】</strong>
+                </p>
+
+                <!-- Host Judge Buttons -->
+                <div id="hostJudgeControls" class="hidden space-y-3 pt-2 bg-slate-900/90 p-4 rounded-2xl border border-amber-500/30">
+                    <div class="text-xs font-bold text-amber-300">【ホスト判定パネル】エセの回答を確認して判定してください</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="hostJudgeFakeAnswer(false)" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-3.5 rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-xmark"></i> 不正解... (市民勝利)
+                        </button>
+                        <button onclick="hostJudgeFakeAnswer(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i> 正解！🎯 (逆転勝利)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="clientWaitJudgeMsg" class="hidden text-xs text-purple-300/80 font-bold animate-pulse py-4">
+                    エセ芸術家の口頭回答と、ホストの正誤判定を待っています...
+                </div>
+            </div>
+
+            <!-- PHASE E: ROUND RESULT PHASE -->
+            <div id="subViewRoundResult" class="hidden glass-panel p-6 md:p-8 rounded-3xl border border-purple-500/30 text-center space-y-6">
+                <div id="roundResultBanner" class="space-y-2"></div>
+
+                <div class="space-y-3 max-w-xl mx-auto">
+                    <div class="text-xs font-bold text-purple-300 uppercase tracking-wider">投票結果</div>
+                    <div id="roundVoteDetails" class="bg-slate-950/80 p-4 rounded-2xl border border-purple-500/20 text-left text-xs space-y-1.5"></div>
+                </div>
+
+                <div class="flex justify-center">
+                    <div class="w-full max-w-xl aspect-[4/3] bg-slate-950 border-2 border-purple-500/40 rounded-3xl overflow-hidden shadow-2xl p-1">
+                        <img id="resultCanvasImage" src="" class="w-full h-full object-contain">
+                    </div>
+                </div>
+
+                <!-- Host Controls for Next Round -->
+                <div id="hostNextRoundControls" class="hidden max-w-md mx-auto pt-2">
+                    <button onclick="returnToLobby()" class="w-full bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 text-white font-black text-lg py-4 rounded-2xl shadow-xl transition transform active:scale-95">
+                        ロビーに戻る ➔
+                    </button>
+                </div>
+                <p id="clientNextRoundMsg" class="hidden text-xs text-purple-300/70 animate-pulse">
+                    ホストがロビーに戻すのを待っています...
+                </p>
+            </div>
+
+            <!-- Action Log Box -->
+            <div class="glass-panel p-4 rounded-3xl border border-purple-500/20 space-y-2">
+                <div class="border-b border-purple-500/20 pb-2">
+                    <span class="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left"></i> 進行ログ
+                    </span>
+                </div>
+                <div id="actionLogList" class="space-y-1 max-h-32 overflow-y-auto text-xs text-purple-100 font-medium pr-1"></div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: GAME OVER -->
+        <div id="viewGameOver" class="hidden glass-panel rounded-3xl p-8 md:p-10 shadow-2xl text-center space-y-6 max-w-2xl mx-auto w-full border border-purple-500/30">
+            <div class="py-2 space-y-2">
+                <div class="w-20 h-20 rounded-3xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-4xl mx-auto mb-2 border border-amber-400/30 shadow-lg">
+                    🏆
+                </div>
+                <h2 class="text-3xl md:text-4xl font-black text-amber-300">ゲームセッション終了！</h2>
+                <p class="text-xs text-purple-200/70">最終スコアランキングです！</p>
+            </div>
+
+            <div class="space-y-3 bg-slate-950/80 p-5 rounded-3xl border border-purple-500/20 text-left">
+                <h4 class="text-xs font-bold text-purple-300 uppercase tracking-wider text-center">最終ランキング</h4>
+                <div id="finalScoreRanking" class="space-y-2"></div>
+            </div>
+
+            <div id="gameOverHostControls" class="hidden space-y-2 pt-2">
+                <button onclick="returnToLobby()" class="w-full bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 text-white font-black text-lg py-4 rounded-2xl shadow-xl transition transform active:scale-95">
+                    ロビーに戻る 🔄
+                </button>
+            </div>
+            <p id="gameOverClientMsg" class="hidden text-xs text-purple-300/70 animate-pulse">
+                ホストがロビーに戻すのを待っています...
+            </p>
+        </div>
+
+    </main>
+
+    <!-- NOTIFICATION MODAL -->
+    <div id="actionNoticeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm pointer-events-none">
+        <div class="glass-panel max-w-sm w-full rounded-3xl p-6 border-2 border-purple-400 shadow-2xl text-center animate-pop space-y-3 bg-slate-900">
+            <div id="noticeIcon" class="text-4xl">📢</div>
+            <h3 id="noticeTitle" class="text-lg font-black text-white">通知</h3>
+            <p id="noticeBody" class="text-xs font-bold text-purple-300">内容</p>
+        </div>
     </div>
 
-  </div>
-
-  <!-- 質問フェイズ -->
-  <div
-    id="screen-question"
-    style="display:none;"
-  >
-
-    <div class="sticky-role-box">
-
-      <div>
-        役職:
-        <span
-          id="sticky-role"
-          style="
-            color:var(--gold-main);
-            font-weight:bold;
-          "
-        >
-          -
-        </span>
-      </div>
-
-      <div>
-        お題:
-        <span
-          id="sticky-word"
-          style="
-            color:var(--danger-color);
-            font-weight:bold;
-          "
-        >
-          -
-        </span>
-      </div>
-
-    </div>
-
-    <div
-      class="timer-display"
-      id="question-timer"
-    >
-      05:00
-    </div>
-
-    <div
-      style="
-        text-align:center;
-        color:var(--text-muted);
-        font-size:1.1rem;
-        margin-bottom:12px;
-      "
-    >
-      ❓ 質問フェイズ
-      （マスターにお題を質問してください）
-    </div>
-
-    <div class="card">
-
-      <div
-        class="card-header"
-        style="color:var(--gold-main);"
-      >
-        🗣️ 庶民・インサイダーは
-        「はい/いいえ」で答えられる質問をしましょう
-      </div>
-
-      <p
-        style="
-          font-size:1.05rem;
-          line-height: 1.6;
-          margin-top: 6px;
-        "
-      >
-        正解（お題）に辿り着いたら、
-        正解ボタンを押して議論へ進みます。
-      </p>
-
-      <button
-        onclick="requestCorrectAnswer()"
-        style="
-          background: linear-gradient(
-            135deg,
-            #27ae60 0%,
-            #1e8449 100%
-          );
-          color: #fff;
-          margin-top: 14px;
-        "
-      >
-        🎯 正解が出たので投票・議論へ進む
-      </button>
-
-    </div>
-
-  </div>
-
-  <!-- 投票フェイズ -->
-  <div
-    id="screen-vote"
-    style="display:none;"
-  >
-
-    <div class="sticky-role-box">
-
-      <div>
-        役職:
-        <span
-          id="sticky-role-v"
-          style="
-            color:var(--gold-main);
-            font-weight:bold;
-          "
-        >
-          -
-        </span>
-      </div>
-
-      <div>
-        お題:
-        <span
-          id="sticky-word-v"
-          style="
-            color:var(--danger-color);
-            font-weight:bold;
-          "
-        >
-          -
-        </span>
-      </div>
-
-    </div>
-
-    <div
-      class="timer-display"
-      id="discussion-timer"
-    >
-      03:00
-    </div>
-
-    <div
-      style="
-        text-align:center;
-        color:var(--text-muted);
-        font-size:1.1rem;
-        margin-bottom:12px;
-      "
-    >
-      🔍 議論＆投票フェイズ
-    </div>
-
-    <div class="vote-progress-container">
-
-      <div
-        style="
-          font-size: 1.3rem;
-          font-weight: bold;
-          color: var(--gold-light);
-        "
-      >
-        🗳️ 投票状況:
-        <span id="vote-count-display">
-          0 / 0
-        </span>
-        人完了
-      </div>
-
-      <div
-        id="vote-status-list"
-        class="vote-status-list"
-      ></div>
-
-    </div>
-
-    <div class="card">
-
-      <div
-        class="card-header"
-        style="color:var(--danger-color);"
-      >
-        🗳️ インサイダーだと思うプレイヤーを1人選択
-      </div>
-
-      <div
-        id="vote-buttons"
-        class="action-btn-group"
-      ></div>
-
-    </div>
-
-  </div>
-
-  <!-- 結果画面 -->
-  <div
-    id="screen-result"
-    style="display:none;"
-  >
-
-    <div
-      class="card"
-      style="text-align: center;"
-    >
-
-      <h2
-        id="result-winner-title"
-        style="
-          margin: 0;
-          color: var(--gold-main);
-          font-size: clamp(1.6rem, 5vw, 2.2rem);
-        "
-      ></h2>
-
-      <p
-        id="result-winner-sub"
-        style="
-          margin-top: 8px;
-          font-size: 1.15rem;
-          color: var(--text-muted);
-        "
-      ></p>
-
-    </div>
-
-    <div class="card">
-
-      <div class="card-header">
-        📋 全員の答え合わせ
-      </div>
-
-      <div
-        style="
-          margin-bottom: 12px;
-          font-size:1.15rem;
-        "
-      >
-        今回のお題:
-        <span
-          id="result-secret-word"
-          class="word-highlight"
-        >
-          -
-        </span>
-      </div>
-
-      <div class="table-wrapper">
-
-        <table class="result-table">
-
-          <thead>
-            <tr>
-              <th>名前</th>
-              <th>役職</th>
-              <th>投票先</th>
-            </tr>
-          </thead>
-
-          <tbody
-            id="result-table-body"
-          ></tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-    <div
-      id="host-replay-panel"
-      style="display:none;"
-    >
-
-      <button onclick="requestReplay()">
-        🔄 もう一度遊ぶ（待機ルームへ戻る）
-      </button>
-
-    </div>
-
-  </div>
-
-  <div style="margin-top: 10px;">
-
-    <div
-      style="
-        font-size:0.9rem;
-        color:var(--text-muted);
-        margin-bottom:4px;
-      "
-    >
-      LOG
-    </div>
-
-    <div
-      class="log-container"
-      id="log-box"
-    ></div>
-
-  </div>
-
-</div>
-
-<script>
-
-  const WORD_LIST = [
-    "冷蔵庫", "電子レンジ", "洗濯機", "テレビ", "エアコン",
-    "掃除機", "ドライヤー", "炊飯器", "扇風機", "空気清浄機",
-    "ベッド", "ソファ", "テーブル", "カーテン", "鏡",
-    "時計", "ゴミ箱", "傘", "ティッシュ", "ハンガー",
-    "ハサミ", "ホッチキス", "セロハンテープ", "ボールペン",
-    "ノート", "消しゴム", "爪切り", "歯ブラシ", "シャンプー",
-    "タオル", "フライパン", "包丁", "まな板", "充電器",
-    "イヤホン", "メガネ", "財布", "鍵", "スマートフォン",
-    "クッション", "ラーメン", "カレーライス", "寿司", "焼肉",
-    "ハンバーグ", "パスタ", "うどん", "そば", "牛丼",
-    "ピザ", "オムライス", "たこ焼き", "お好み焼き", "天ぷら",
-    "唐揚げ", "餃子", "サンドイッチ", "食パン", "おにぎり",
-    "リンゴ", "バナナ", "イチゴ", "ミカン", "スイカ",
-    "ブドウ", "キャベツ", "トマト", "玉ねぎ", "ジャガイモ",
-    "学校", "病院", "コンビニ", "スーパーマーケット",
-    "映画館", "遊園地", "水族館", "動物園", "図書館",
-    "温泉", "ホテル", "空港", "駅", "交番",
-    "郵便局", "銀行", "公園", "キャンプ場",
-    "自動車", "タクシー", "バス", "トラック", "救急車",
-    "消防車", "パトカー", "新幹線", "電車", "飛行機",
-    "犬", "猫", "ライオン", "パンダ", "ゾウ",
-    "キリン", "コアラ", "ゴリラ", "ペンギン", "イルカ"
-  ];
-
-  const PREFIX = "insider-game-v3-";
-
-  let peer = null;
-  let myId = "";
-  let myName = "";
-  let roomCode = "";
-
-  let isHost = false;
-
-  let connections = {};
-  let hostConn = null;
-
-  let players = [];
-
-  let myRole = "";
-  let secretWord = "";
-
-  let confirmTimerInterval = null;
-  let questionTimerInterval = null;
-  let discussionTimerInterval = null;
-
-  let questionDuration = 300;
-  let discussionDuration = 180;
-
-  let votes = {};
-
-
-  function log(msg) {
-
-    const box = document.getElementById("log-box");
-
-    box.innerHTML += `<div>> ${msg}</div>`;
-
-    box.scrollTop = box.scrollHeight;
-
-  }
-
-
-  function joinAsHost() {
-
-    myName =
-      document.getElementById("input-name")
-        .value.trim() || "ホスト";
-
-    roomCode =
-      document.getElementById("input-room-code")
-        .value.trim().toLowerCase();
-
-    if (!roomCode) {
-      return alert(
-        "合言葉（部屋名）を入力してください"
-      );
-    }
-
-    isHost = true;
-
-    const peerId =
-      `${PREFIX}${roomCode}-host`;
-
-    peer = new Peer(peerId);
-
-
-    peer.on("open", (id) => {
-
-      myId = id;
-
-      setupLobbyUI();
-
-      players.push({
-        id: myId,
-        name: myName
-      });
-
-      renderPlayers();
-
-      log(
-        `部屋を作成しました (部屋名: ${roomCode})`
-      );
-
-    });
-
-
-    peer.on("error", (err) => {
-
-      if (err.type === "unavailable-id") {
-
-        alert(
-          "その部屋名は使われています。別の部屋名を入力してください。"
-        );
-
-      } else {
-
-        alert(
-          "エラーが発生しました: " + err.type
-        );
-
-      }
-
-    });
-
-
-    peer.on("connection", (conn) => {
-
-      conn.on("open", () => {
-
-        conn.on("data", (data) => {
-
-          handleHostData(conn, data);
-
-        });
-
-      });
-
-
-      conn.on("close", () => {
-
-        players =
-          players.filter(
-            p => p.id !== conn.peer
-          );
-
-        delete connections[conn.peer];
-
-        broadcast({
-          type: "PLAYER_LIST",
-          players
-        });
-
-        renderPlayers();
-
-      });
-
-    });
-
-  }
-
-
-  function joinAsGuest() {
-
-    myName =
-      document.getElementById("input-name")
-        .value.trim() || "ゲスト";
-
-    roomCode =
-      document.getElementById("input-room-code")
-        .value.trim().toLowerCase();
-
-    if (!roomCode) {
-
-      return alert(
-        "合言葉（部屋名）を入力してください"
-      );
-
-    }
-
-    isHost = false;
-
-    const hostPeerId =
-      `${PREFIX}${roomCode}-host`;
-
-    peer = new Peer();
-
-
-    peer.on("open", (id) => {
-
-      myId = id;
-
-      hostConn =
-        peer.connect(hostPeerId);
-
-
-      hostConn.on("open", () => {
-
-        setupLobbyUI();
-
-        hostConn.send({
-          type: "JOIN",
-          name: myName
-        });
-
-        log(
-          `部屋 [${roomCode}] に接続しました`
-        );
-
-      });
-
-
-      hostConn.on("data", (data) => {
-
-        handleClientData(data);
-
-      });
-
-    });
-
-
-    peer.on("error", () => {
-
-      alert(
-        "ホストに接続できませんでした。部屋名を確認してください。"
-      );
-
-    });
-
-  }
-
-
-  function setupLobbyUI() {
-
-    document.getElementById(
-      "screen-lobby"
-    ).style.display = "none";
-
-    document.getElementById(
-      "screen-room"
-    ).style.display = "block";
-
-    document.getElementById(
-      "screen-result"
-    ).style.display = "none";
-
-    document.getElementById(
-      "room-name-display"
-    ).innerText = roomCode;
-
-    if (isHost) {
-
-      document.getElementById(
-        "host-panel"
-      ).style.display = "block";
-
-    }
-
-  }
-
-
-  function renderPlayers() {
-
-    const el =
-      document.getElementById("player-list");
-
-    el.innerHTML =
-      players.map(p => `
-        <span class="player-badge">
-          👤 ${p.name}
-        </span>
-      `).join("");
-
-
-    if (isHost) {
-
-      document.getElementById(
-        "btn-start"
-      ).disabled = players.length < 3;
-
-    }
-
-  }
-
-
-  /*
-   * ============================================================
-   * ゲーム開始
-   * ============================================================
-   *
-   * ★今回の修正ポイント
-   *
-   * ホストがマスター/インサイダーかどうかではなく、
-   * 「そのプレイヤー自身の役職」でお題を見る権限を決める。
-   *
-   * マスター       -> canSeeWord: true
-   * インサイダー   -> canSeeWord: true
-   * 庶民           -> canSeeWord: false
-   *
-   * さらに、各プレイヤーへ個別にGAME_STARTを送信する。
-   * ============================================================
-   */
-
-  function startGame() {
-
-    if (players.length < 3) {
-      return;
-    }
-
-    votes = {};
-
-
-    questionDuration =
-      parseInt(
-        document.getElementById(
-          "select-question-time"
-        ).value,
-        10
-      );
-
-
-    discussionDuration =
-      parseInt(
-        document.getElementById(
-          "select-discussion-time"
-        ).value,
-        10
-      );
-
-
-    // お題を決定
-    secretWord =
-      WORD_LIST[
-        Math.floor(
-          Math.random() * WORD_LIST.length
-        )
-      ];
-
-
-    // プレイヤーをシャッフル
-    const shuffled =
-      shuffle([...players]);
-
-
-    // 役職を決定
-    const masterId =
-      shuffled[0].id;
-
-    const insiderId =
-      shuffled[1].id;
-
-
-    // 全員の役職を確定
-    players.forEach(p => {
-
-      if (p.id === masterId) {
-
-        p.role = "マスター";
-
-      } else if (p.id === insiderId) {
-
-        p.role = "インサイダー";
-
-      } else {
-
-        p.role = "庶民";
-
-      }
-
-    });
-
-
-    /*
-     * 各プレイヤーに個別のGAME_STARTを送信
-     */
-    players.forEach(p => {
-
-      // ★役職だけでお題閲覧権限を決める
-      const canSeeWord =
-        p.role === "マスター" ||
-        p.role === "インサイダー";
-
-
-      const payload = {
-
-        type: "GAME_START",
-
-        // プレイヤー自身の役職
-        role: p.role,
-
-        // ★今回の重要部分
-        canSeeWord: canSeeWord,
-
-        // ★マスター/インサイダーには実際のお題
-        // ★庶民には非公開文字列
-        word: canSeeWord
-          ? secretWord
-          : "??? (非公開)",
-
-        questionTime:
-          questionDuration,
-
-        discussionTime:
-          discussionDuration
-
-      };
-
-
-      // ホスト自身
-      if (p.id === myId) {
-
-        handleClientData(payload);
-
-      }
-
-      // ゲスト
-      else {
-
-        const conn =
-          connections[p.id];
-
-        if (conn && conn.open) {
-
-          conn.send(payload);
-
+    <!-- Footer -->
+    <footer class="p-4 text-center text-xs text-purple-300/50 border-t border-purple-500/10">
+        &copy; エセ芸術家 ニューヨークへ行く Online
+    </footer>
+
+    <!-- GAME ENGINE & PEERJS SCRIPT -->
+    <script>
+        const PREFIX = "fake-artist-online-p2p-v3-";
+
+        // Distinct Palette for Artists
+        const PLAYER_COLORS = [
+            '#f43f5e', // Rose / Red
+            '#3b82f6', // Blue
+            '#10b981', // Emerald / Green
+            '#eab308', // Yellow
+            '#a855f7', // Purple
+            '#f97316', // Orange
+            '#06b6d4', // Cyan
+            '#ec4899', // Pink
+            '#84cc16', // Lime
+            '#6366f1'  // Indigo
+        ];
+
+        // 50 Preset Topics per Category (Total 300 Topics)
+        const PRESET_TOPICS = {
+            "動物・生き物": [
+                "ライオン", "パンダ", "ペンギン", "ゾウ", "キリン", "コアラ", "カンガルー", "ワニ", "カメ", "カエル",
+                "ウサギ", "ハムスター", "ゴリラ", "トラ", "チーター", "シロクマ", "ラッコ", "イルカ", "クジラ", "サメ",
+                "タコ", "イカ", "フラミンゴ", "オウム", "フクロウ", "ワシ", "クジャク", "カブトムシ", "クワガタ", "チョウ",
+                "バッタ", "カマキリ", "クラゲ", "チンアナゴ", "カピバラ", "アリクイ", "アルパカ", "タツノオトシゴ", "カツオ", "サソリ",
+                "ヘビ", "トカゲ", "カメレオン", "ヤギ", "ヒツジ", "シカ", "サイ", "カバ", "モモンガ", "ハシビロコウ"
+            ],
+            "食べ物・料理": [
+                "ラーメン", "ハンバーガー", "オムライス", "カレーライス", "寿司", "天ぷら", "ピザ", "グラタン", "パスタ", "たこ焼き",
+                "お好み焼き", "牛丼", "うどん", "そば", "餃子", "焼き鳥", "フライドポテト", "ホットドッグ", "パンケーキ", "ドーナツ",
+                "パフェ", "ソフトクリーム", "ショートケーキ", "プリン", "かき氷", "いちご大福", "団子", "タイ焼き", "メロンパン", "クロワッサン",
+                "目玉焼き", "ステーキ", "エビフライ", "サンドイッチ", "おにぎり", "味噌汁", "麻婆豆腐", "エビチリ", "中華丼", "小籠包",
+                "焼きそば", "コロッケ", "ロールキャベツ", "アップルパイ", "タピオカ", "ポップコーン", "チョコレート", "納豆ご飯", "アボカドサラダ", "チーズフォンデュ"
+            ],
+            "乗り物・建物": [
+                "新幹線", "飛行機", "ヘリコプター", "潜水艦", "宇宙船", "パトカー", "救急車", "消防車", "気球", "蒸気機関車",
+                "海賊船", "二輪バイク", "客船", "タクシー", "路線バス", "ブルドーザー", "ショベルカー", "クレーン車", "自転車", "一輪車",
+                "東京タワー", "自由の女神", "ピラミッド", "風車", "城", "神社", "寺", "教会", "観覧車", "ジェットコースター",
+                "スカイツリー", "富士山", "灯台", "サーカス小屋", "水族館", "美術館", "学校", "病院", "交番", "郵便局",
+                "マンション", "茅葺き屋根の家", "ガソリンスタンド", "風力発電風車", "吊り橋", "トンネル", "時計台", "コロッセオ", "凱旋門", "タージ・マハル"
+            ],
+            "日用品・道具": [
+                "メガネ", "傘", "ハサミ", "ホッチキス", "ドライヤー", "歯ブラシ", "懐中電灯", "双眼鏡", "顕微鏡", "望遠鏡",
+                "腕時計", "目覚まし時計", "黒板消し", "コンパス", "虫眼鏡", "包丁", "フライパン", "おたま", "急須", "ワイングラス",
+                "アイロン", "掃除機", "洗濯機", "冷蔵庫", "電子レンジ", "扇風機", "テレビ", "スマホ", "ノートパソコン", "一眼レフカメラ",
+                "ヘッドホン", "アコースティックギター", "グランドピアノ", "ドラム", "バイオリン", "トランペット", "マイク", "金づち", "ドライバー", "ノコギリ",
+                "スコップ", "じょうろ", "消火器", "砂時計", "地球儀", "安全ピン", "ハンガー", "南京錠", "聴診器", "体温計"
+            ],
+            "キャラクター・有名人": [
+                "ドラえもん", "ピカチュウ", "アンパンマン", "マリオ", "ルイージ", "ソニック", "ミッキーマウス", "スヌーピー", "ハローキティ", "くまのプーさん",
+                "ウルトラマン", "仮面ライダー", "ゴジラ", "孫悟空", "ルフィ", "ナルト", "江戸川コナン", "野原しんのすけ", "トトロ", "カオナシ",
+                "クレヨンしんちゃん", "ちびまる子ちゃん", "サザエさん", "バカボン", "ガチャピン", "ムック", "ふなっしー", "くまモン", "バカボンのパパ", "星のカービィ",
+                "パックマン", "スライム", "キングスライム", "ガンダム", "エヴァンゲリオン初号機", "サンタクロース", "織田信長", "坂本龍馬", "モナ・リザ", "ベートーヴェン",
+                "アインシュタイン", "チャップリン", "クレオパトラ", "聖徳太子", "ナポレオン", "自由の女神", "ペリー", "モーツァルト", "ニュートン", "ピカソ"
+            ],
+            "スポーツ・趣味": [
+                "サッカー", "野球", "バスケットボール", "テニス", "卓球", "バレーボール", "バドミントン", "ゴルフ", "ボウリング", "ビリヤード",
+                "ラグビー", "相撲", "ボクシング", "空手", "剣道", "柔道", "アーチェリー", "フェンシング", "フィギュアスケート", "スキー",
+                "スノーボード", "サーフィン", "スケートボード", "ボルダリング", "マラソン", "水泳", "新体操", "ウェイトリフティング", "トランポリン", "ダーツ",
+                "釣り", "キャンプ", "天体観測", "ガーデニング", "将棋", "囲碁", "チェス", "ルービックキューブ", "トランプ", "麻雀",
+                "カメラ・写真", "読書", "映画鑑賞", "登山", "サイクリング", "カラオケ", "和太鼓", "プラモデル", "折り紙", "手芸・編み物"
+            ]
+        };
+
+        let peer = null, myId = "", myName = "", roomCode = "";
+        let isHost = false;
+        let connections = {};
+        let hostConn = null;
+
+        // Shared Game State
+        let roomData = {
+            hostId: "",
+            status: 'LOBBY', // LOBBY, DRAWING, VOTING, FAKE_GUESS, ROUND_RESULT, GAMEOVER
+            selectedGenre: 'RANDOM_ALL',
+            fakeArtistId: "",
+            category: "",
+            topic: "",
+            players: {},
+            drawingOrder: [],
+            currentTurnIndex: 0,
+            drawingRound: 1,
+            sharedStrokes: [],
+            votes: {},
+            lastResult: null,
+            logs: []
+        };
+
+        let soundEnabled = true;
+
+        // Canvas State
+        let canvas, ctx;
+        let isDrawing = false;
+        let currentLocalStrokePoints = [];
+
+        // Audio Engine
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'tap') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(480, now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'stroke') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(320, now);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'success') {
+                    [523.25, 659.25, 783.99].forEach((freq, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(freq, now + i * 0.08);
+                        g.gain.setValueAtTime(0.12, now + i * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.2);
+                        o.start(now + i * 0.08);
+                        o.stop(now + i * 0.08 + 0.2);
+                    });
+                } else if (type === 'fail') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                }
+            } catch (e) {
+                console.warn("Audio exception:", e);
+            }
         }
 
-      }
+        function showView(viewId) {
+            ['viewLobby', 'viewRoomLobby', 'viewGame', 'viewGameOver'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            const target = document.getElementById(viewId);
+            if (target) target.classList.remove('hidden');
 
-    });
-
-  }
-
-
-  function setupConfirmScreen(data) {
-
-    myRole = data.role;
-
-
-    document.getElementById(
-      "screen-room"
-    ).style.display = "none";
-
-    document.getElementById(
-      "screen-confirm"
-    ).style.display = "block";
-
-    document.getElementById(
-      "screen-question"
-    ).style.display = "none";
-
-    document.getElementById(
-      "screen-vote"
-    ).style.display = "none";
-
-    document.getElementById(
-      "screen-result"
-    ).style.display = "none";
-
-
-    // 役職を表示
-    document.getElementById(
-      "info-role"
-    ).innerText = myRole;
-
-
-    const wordEl =
-      document.getElementById("info-word");
-
-
-    /*
-     * ★ここも修正
-     *
-     * roleだけではなくcanSeeWordを使用。
-     *
-     * GAME_STARTで個別にtrue/falseが送られてくるので、
-     * ホストが何の役職でも関係ない。
-     */
-
-    if (data.canSeeWord === true) {
-
-      secretWord = data.word;
-
-      wordEl.innerText =
-        data.word;
-
-      wordEl.style.color =
-        "var(--danger-color)";
-
-    } else {
-
-      secretWord =
-        "??? (非公開)";
-
-      wordEl.innerText =
-        "??? (非公開)";
-
-      wordEl.style.color =
-        "var(--text-muted)";
-
-    }
-
-
-    // 上部ヘッダー
-    document.getElementById(
-      "sticky-role"
-    ).innerText = myRole;
-
-    document.getElementById(
-      "sticky-word"
-    ).innerText = secretWord;
-
-    document.getElementById(
-      "sticky-role-v"
-    ).innerText = myRole;
-
-    document.getElementById(
-      "sticky-word-v"
-    ).innerText = secretWord;
-
-
-    // 確認タイマー
-    let confirmRemaining = 20;
-
-    document.getElementById(
-      "confirm-timer"
-    ).innerText =
-      confirmRemaining;
-
-
-    clearInterval(
-      confirmTimerInterval
-    );
-
-
-    confirmTimerInterval =
-      setInterval(() => {
-
-        confirmRemaining--;
-
-        document.getElementById(
-          "confirm-timer"
-        ).innerText =
-          confirmRemaining;
-
-
-        if (confirmRemaining <= 0) {
-
-          clearInterval(
-            confirmTimerInterval
-          );
-
-
-          /*
-           * ホストはゲーム進行役。
-           * ホストの役職とは無関係に質問フェイズを開始。
-           */
-
-          if (isHost) {
-
-            startQuestionPhase();
-
-          }
-
+            const headerInfo = document.getElementById('headerInfo');
+            if (headerInfo) {
+                if (viewId !== 'viewLobby') headerInfo.classList.remove('hidden');
+                else headerInfo.classList.add('hidden');
+            }
         }
 
-      }, 1000);
-
-  }
-
-
-  function startQuestionPhase() {
-
-    broadcast({
-      type: "START_QUESTION"
-    });
-
-
-    let remaining =
-      questionDuration;
-
-
-    broadcast({
-      type: "QUESTION_TIMER_SYNC",
-      time: remaining
-    });
-
-
-    clearInterval(
-      questionTimerInterval
-    );
-
-
-    questionTimerInterval =
-      setInterval(() => {
-
-        remaining--;
-
-        broadcast({
-          type: "QUESTION_TIMER_SYNC",
-          time: remaining
-        });
-
-
-        if (remaining <= 0) {
-
-          clearInterval(
-            questionTimerInterval
-          );
-
-          triggerTimeOutResult();
-
+        function getPlayerName() {
+            const input = document.getElementById('playerNameInput');
+            const val = input ? input.value.trim() : '';
+            return val || '画伯' + Math.floor(Math.random() * 900 + 100);
         }
 
-      }, 1000);
-
-  }
-
-
-  function triggerDiscussionPhase() {
-
-    clearInterval(
-      questionTimerInterval
-    );
-
-
-    broadcast({
-      type: "START_DISCUSSION"
-    });
-
-
-    let remaining =
-      discussionDuration;
-
-
-    broadcast({
-      type: "DISCUSSION_TIMER_SYNC",
-      time: remaining
-    });
-
-
-    clearInterval(
-      discussionTimerInterval
-    );
-
-
-    discussionTimerInterval =
-      setInterval(() => {
-
-        remaining--;
-
-        broadcast({
-          type: "DISCUSSION_TIMER_SYNC",
-          time: remaining
-        });
-
-
-        if (remaining <= 0) {
-
-          clearInterval(
-            discussionTimerInterval
-          );
-
+        function addLog(message) {
+            if (!roomData.logs) roomData.logs = [];
+            roomData.logs.unshift(message);
+            if (roomData.logs.length > 25) roomData.logs.pop();
         }
 
-      }, 1000);
-
-  }
-
-
-  function requestCorrectAnswer() {
-
-    if (isHost) {
-
-      triggerDiscussionPhase();
-
-    } else {
-
-      hostConn.send({
-        type: "CORRECT_ANSWER"
-      });
-
-    }
-
-  }
-
-
-  function formatTime(seconds) {
-
-    const m =
-      Math.floor(seconds / 60)
-        .toString()
-        .padStart(2, "0");
-
-    const s =
-      (seconds % 60)
-        .toString()
-        .padStart(2, "0");
-
-    return `${m}:${s}`;
-
-  }
-
-
-  function handleHostData(conn, data) {
-
-    if (data.type === "JOIN") {
-
-      connections[conn.peer] =
-        conn;
-
-
-      players.push({
-        id: conn.peer,
-        name: data.name
-      });
-
-
-      broadcast({
-        type: "PLAYER_LIST",
-        players
-      });
-
-
-      renderPlayers();
-
-    }
-
-
-    else if (data.type === "VOTE") {
-
-      handleVote(
-        conn.peer,
-        data.targetId
-      );
-
-    }
-
-
-    else if (
-      data.type === "CORRECT_ANSWER"
-    ) {
-
-      triggerDiscussionPhase();
-
-    }
-
-  }
-
-
-  function handleClientData(data) {
-
-    if (data.type === "PLAYER_LIST") {
-
-      players =
-        data.players;
-
-      renderPlayers();
-
-    }
-
-
-    else if (data.type === "GAME_START") {
-
-      setupConfirmScreen(data);
-
-    }
-
-
-    else if (
-      data.type === "START_QUESTION"
-    ) {
-
-      clearInterval(
-        confirmTimerInterval
-      );
-
-
-      document.getElementById(
-        "screen-confirm"
-      ).style.display = "none";
-
-
-      document.getElementById(
-        "screen-question"
-      ).style.display = "block";
-
-    }
-
-
-    else if (
-      data.type === "QUESTION_TIMER_SYNC"
-    ) {
-
-      document.getElementById(
-        "question-timer"
-      ).innerText =
-        formatTime(data.time);
-
-    }
-
-
-    else if (
-      data.type === "START_DISCUSSION"
-    ) {
-
-      startVoteScreen();
-
-    }
-
-
-    else if (
-      data.type === "DISCUSSION_TIMER_SYNC"
-    ) {
-
-      document.getElementById(
-        "discussion-timer"
-      ).innerText =
-        formatTime(data.time);
-
-    }
-
-
-    else if (
-      data.type === "VOTE_PROGRESS"
-    ) {
-
-      updateVoteProgressUI(
-        data.votedCount,
-        data.totalCount,
-        data.votedPlayerIds
-      );
-
-    }
-
-
-    else if (
-      data.type === "SHOW_RESULT"
-    ) {
-
-      showResultScreen(data);
-
-    }
-
-
-    else if (
-      data.type === "RETURN_TO_ROOM"
-    ) {
-
-      returnToRoom();
-
-    }
-
-  }
-
-
-  function broadcast(data) {
-
-    Object.values(
-      connections
-    ).forEach(c => {
-
-      if (c && c.open) {
-
-        c.send(data);
-
-      }
-
-    });
-
-
-    // ホスト自身にも処理させる
-    handleClientData(data);
-
-  }
-
-
-  function shuffle(array) {
-
-    for (
-      let i = array.length - 1;
-      i > 0;
-      i--
-    ) {
-
-      const j =
-        Math.floor(
-          Math.random() * (i + 1)
-        );
-
-
-      [
-        array[i],
-        array[j]
-      ] = [
-        array[j],
-        array[i]
-      ];
-
-    }
-
-    return array;
-
-  }
-
-
-  function startVoteScreen() {
-
-    document.getElementById(
-      "screen-question"
-    ).style.display = "none";
-
-    document.getElementById(
-      "screen-vote"
-    ).style.display = "block";
-
-
-    updateVoteProgressUI(
-      0,
-      players.length,
-      []
-    );
-
-
-    const voteBox =
-      document.getElementById(
-        "vote-buttons"
-      );
-
-
-    voteBox.innerHTML = "";
-
-
-    players.forEach(p => {
-
-      if (p.id !== myId) {
-
-        const btn =
-          document.createElement("button");
-
-
-        btn.innerText =
-          `🗳️ 「${p.name}」 に投票`;
-
-
-        btn.onclick = () =>
-          castVote(p.id);
-
-
-        voteBox.appendChild(btn);
-
-      }
-
-    });
-
-  }
-
-
-  function castVote(targetId) {
-
-    document.getElementById(
-      "vote-buttons"
-    ).innerHTML =
-      `
-        <p
-          style="
-            color:var(--gold-light);
-            font-size:1.2rem;
-            text-align:center;
-          "
-        >
-          投票完了。全員の投票を待っています...
-        </p>
-      `;
-
-
-    if (isHost) {
-
-      handleVote(
-        myId,
-        targetId
-      );
-
-    } else {
-
-      hostConn.send({
-        type: "VOTE",
-        targetId
-      });
-
-    }
-
-  }
-
-
-  function handleVote(
-    fromId,
-    targetId
-  ) {
-
-    votes[fromId] =
-      targetId;
-
-
-    const votedCount =
-      Object.keys(votes).length;
-
-    const totalCount =
-      players.length;
-
-    const votedPlayerIds =
-      Object.keys(votes);
-
-
-    broadcast({
-
-      type: "VOTE_PROGRESS",
-
-      votedCount:
-        votedCount,
-
-      totalCount:
-        totalCount,
-
-      votedPlayerIds:
-        votedPlayerIds
-
-    });
-
-
-    if (
-      votedCount === totalCount
-    ) {
-
-      const counts = {};
-
-
-      Object.values(votes)
-        .forEach(target => {
-
-          counts[target] =
-            (counts[target] || 0) + 1;
-
+        function showNotice(icon, title, body, duration = 2000) {
+            document.getElementById('noticeIcon').innerText = icon;
+            document.getElementById('noticeTitle').innerText = title;
+            document.getElementById('noticeBody').innerText = body;
+            const modal = document.getElementById('actionNoticeModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.add('hidden'); }, duration);
+            }
+        }
+
+        // --- CANVAS ENGINE ---
+
+        function initCanvas() {
+            canvas = document.getElementById('sharedCanvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            };
+
+            const isMyTurnToDraw = () => {
+                if (roomData.status !== 'DRAWING') return false;
+                const activeDrawerId = roomData.drawingOrder[roomData.currentTurnIndex];
+                return activeDrawerId === myId;
+            };
+
+            const startDraw = (e) => {
+                if (!isMyTurnToDraw()) return;
+                isDrawing = true;
+                currentLocalStrokePoints = [];
+                const pos = getPos(e);
+                currentLocalStrokePoints.push(pos);
+                redrawSharedCanvas();
+                playSound('stroke');
+            };
+
+            const moveDraw = (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+                currentLocalStrokePoints.push(pos);
+                redrawSharedCanvas();
+            };
+
+            const endDraw = () => {
+                if (!isDrawing) return;
+                isDrawing = false;
+                
+                const btnConfirm = document.getElementById('btnConfirmStroke');
+                if (currentLocalStrokePoints.length > 1 && btnConfirm) {
+                    btnConfirm.disabled = false;
+                    btnConfirm.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            };
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', moveDraw);
+            canvas.addEventListener('mouseup', endDraw);
+            canvas.addEventListener('mouseleave', endDraw);
+
+            canvas.addEventListener('touchstart', startDraw);
+            canvas.addEventListener('touchmove', moveDraw);
+            canvas.addEventListener('touchend', endDraw);
+        }
+
+        function redrawSharedCanvas() {
+            if (!ctx) return;
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw all confirmed shared strokes
+            if (roomData.sharedStrokes) {
+                roomData.sharedStrokes.forEach(stroke => {
+                    renderSingleStroke(stroke.points, stroke.color);
+                });
+            }
+
+            // Draw active unconfirmed local stroke
+            if (currentLocalStrokePoints.length > 1) {
+                const myColor = roomData.players[myId] ? roomData.players[myId].color : '#f43f5e';
+                renderSingleStroke(currentLocalStrokePoints, myColor);
+            }
+        }
+
+        function renderSingleStroke(points, color) {
+            if (!points || points.length < 2) return;
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+        }
+
+        window.undoCurrentStroke = function() {
+            playSound('tap');
+            currentLocalStrokePoints = [];
+            const btnConfirm = document.getElementById('btnConfirmStroke');
+            if (btnConfirm) {
+                btnConfirm.disabled = true;
+                btnConfirm.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            redrawSharedCanvas();
+        };
+
+        window.confirmStroke = function() {
+            playSound('tap');
+            if (currentLocalStrokePoints.length < 2) return;
+
+            const myColor = roomData.players[myId] ? roomData.players[myId].color : '#f43f5e';
+            const strokeData = {
+                playerId: myId,
+                color: myColor,
+                points: [...currentLocalStrokePoints]
+            };
+
+            currentLocalStrokePoints = [];
+            const btnConfirm = document.getElementById('btnConfirmStroke');
+            if (btnConfirm) {
+                btnConfirm.disabled = true;
+                btnConfirm.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            if (isHost) {
+                processAddStroke(strokeData);
+            } else {
+                hostConn.send({ type: 'SUBMIT_STROKE', stroke: strokeData });
+            }
+        };
+
+        // --- NETWORK & PEER HANDLERS ---
+
+        function handleCreateRoom() {
+            playSound('tap');
+            myName = getPlayerName();
+            const input = document.getElementById('joinRoomCodeInput');
+            roomCode = input ? input.value.trim().toLowerCase() : '';
+
+            if (!roomCode) {
+                alert("合言葉を入力してください");
+                return;
+            }
+
+            if (typeof Peer === 'undefined') {
+                alert("通信ライブラリの読み込み中です。数秒待ってから再試行してください。");
+                return;
+            }
+
+            isHost = true;
+            const peerId = `${PREFIX}${roomCode}-host`;
+            peer = new Peer(peerId);
+
+            peer.on('open', (id) => {
+                myId = id;
+                roomData.hostId = myId;
+                roomData.players = {
+                    [myId]: { id: myId, name: myName, score: 0, color: PLAYER_COLORS[0], isHost: true }
+                };
+                roomData.logs = [];
+
+                setupLobbyUI();
+                renderRoomState();
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    alert("その合言葉はすでに使用されています。別の合言葉にしてください。");
+                } else {
+                    alert("接続エラーが発生しました: " + err.type);
+                }
+            });
+
+            peer.on('connection', (conn) => {
+                conn.on('open', () => {
+                    conn.on('data', (data) => handleHostData(conn, data));
+                });
+                conn.on('close', () => {
+                    delete connections[conn.peer];
+                    delete roomData.players[conn.peer];
+                    broadcastState();
+                });
+            });
+        }
+
+        function handleJoinRoom() {
+            playSound('tap');
+            myName = getPlayerName();
+            const input = document.getElementById('joinRoomCodeInput');
+            roomCode = input ? input.value.trim().toLowerCase() : '';
+
+            if (!roomCode) {
+                alert("合言葉を入力してください");
+                return;
+            }
+
+            if (typeof Peer === 'undefined') {
+                alert("通信ライブラリの読み込み中です。数秒待ってから再試行してください。");
+                return;
+            }
+
+            isHost = false;
+            const hostPeerId = `${PREFIX}${roomCode}-host`;
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                myId = id;
+                hostConn = peer.connect(hostPeerId);
+
+                hostConn.on('open', () => {
+                    hostConn.send({ type: 'JOIN', id: myId, name: myName });
+                    setupLobbyUI();
+                });
+
+                hostConn.on('data', (data) => handleClientData(data));
+            });
+
+            peer.on('error', () => {
+                alert("部屋が見つかりませんでした。合言葉を確認してください。");
+            });
+        }
+
+        function setupLobbyUI() {
+            document.getElementById('displayRoomCode').innerText = roomCode;
+            document.getElementById('lobbyRoomCode').innerText = roomCode;
+            showView('viewRoomLobby');
+            initCanvas();
+        }
+
+        function getFirstAvailableColor() {
+            const usedColors = Object.values(roomData.players).map(p => p.color);
+            return PLAYER_COLORS.find(c => !usedColors.includes(c)) || PLAYER_COLORS[0];
+        }
+
+        function broadcastState() {
+            if (!isHost) return;
+            Object.values(connections).forEach(c => c.send({ type: 'SYNC_STATE', roomData }));
+            renderRoomState();
+        }
+
+        function handleHostData(conn, data) {
+            if (data.type === 'JOIN') {
+                if (roomData.status !== 'LOBBY') {
+                    conn.send({ type: 'ERROR', message: 'ゲームはすでに進行中です' });
+                    return;
+                }
+                connections[conn.peer] = conn;
+                
+                // Assign first available unique color
+                const assignedColor = getFirstAvailableColor();
+                roomData.players[data.id] = { id: data.id, name: data.name, score: 0, color: assignedColor, isHost: false };
+                
+                broadcastState();
+            } else if (data.type === 'SELECT_COLOR') {
+                processSelectColor(data.playerId, data.color);
+            } else if (data.type === 'SUBMIT_STROKE') {
+                processAddStroke(data.stroke);
+            } else if (data.type === 'SUBMIT_VOTE') {
+                processSubmitVote(data.voterId, data.targetId);
+            } else if (data.type === 'HOST_JUDGE_FAKE') {
+                processHostJudgeFake(data.isCorrect);
+            } else if (data.type === 'RETURN_TO_LOBBY') {
+                processReturnToLobby();
+            }
+        }
+
+        function handleClientData(data) {
+            if (data.type === 'SYNC_STATE') {
+                roomData = data.roomData;
+                renderRoomState();
+            } else if (data.type === 'ERROR') {
+                alert(data.message);
+            }
+        }
+
+        // --- COLOR SELECTION LOGIC ---
+
+        window.selectMyColor = function(hexColor) {
+            playSound('tap');
+            if (isHost) {
+                processSelectColor(myId, hexColor);
+            } else {
+                hostConn.send({ type: 'SELECT_COLOR', playerId: myId, color: hexColor });
+            }
+        };
+
+        function processSelectColor(playerId, hexColor) {
+            // Check if color is already taken by another player
+            const takenBy = Object.values(roomData.players).find(p => p.color === hexColor && p.id !== playerId);
+            if (takenBy) return; // Prevent duplicate
+
+            if (roomData.players[playerId]) {
+                roomData.players[playerId].color = hexColor;
+                broadcastState();
+            }
+        }
+
+        // --- GAME LOGIC ENGINE (HOST) ---
+
+        window.startGame = function() {
+            playSound('tap');
+            if (!isHost) return;
+
+            const playerIds = Object.keys(roomData.players);
+            if (playerIds.length < 3) {
+                alert("プレイには最低3名以上のプレイヤーが必要です");
+                return;
+            }
+
+            // 1. Determine Category & Topic automatically
+            let cat = "", top = "";
+            if (roomData.selectedGenre === 'RANDOM_ALL') {
+                const keys = Object.keys(PRESET_TOPICS);
+                cat = keys[Math.floor(Math.random() * keys.length)];
+                const list = PRESET_TOPICS[cat];
+                top = list[Math.floor(Math.random() * list.length)];
+            } else {
+                cat = roomData.selectedGenre || "動物・生き物";
+                const list = PRESET_TOPICS[cat] || PRESET_TOPICS["動物・生き物"];
+                top = list[Math.floor(Math.random() * list.length)];
+            }
+
+            roomData.category = cat;
+            roomData.topic = top;
+
+            // 2. FULLY RESHUFFLE Fake Artist among ALL players
+            const fakeIdx = Math.floor(Math.random() * playerIds.length);
+            roomData.fakeArtistId = playerIds[fakeIdx];
+
+            // 3. FULLY RESHUFFLE drawing order
+            roomData.drawingOrder = [...playerIds].sort(() => Math.random() - 0.5);
+            roomData.currentTurnIndex = 0;
+            roomData.drawingRound = 1;
+            roomData.sharedStrokes = [];
+            roomData.votes = {};
+            roomData.lastResult = null;
+
+            roomData.status = 'DRAWING';
+            addLog(`=== 新しいゲーム開始！お題配布。(ジャンル: ${cat}) ===`);
+            broadcastState();
+        };
+
+        function processAddStroke(strokeData) {
+            roomData.sharedStrokes.push(strokeData);
+            
+            const artistName = roomData.players[strokeData.playerId] ? roomData.players[strokeData.playerId].name : '';
+            addLog(`${artistName} が線を1本書き加えました。`);
+
+            // Advance Turn
+            roomData.currentTurnIndex++;
+            if (roomData.currentTurnIndex >= roomData.drawingOrder.length) {
+                roomData.currentTurnIndex = 0;
+                roomData.drawingRound++;
+
+                if (roomData.drawingRound > 2) {
+                    // Drawing phase finished -> Move to Voting
+                    roomData.status = 'VOTING';
+                    roomData.votes = {};
+                    addLog(`🎨 2周のお絵かきが完了！討論と見破り投票へ移行します。`);
+                } else {
+                    addLog(`🔄 2周目の筆入れに入ります！`);
+                }
+            }
+
+            broadcastState();
+        }
+
+        window.submitVote = function(targetId) {
+            playSound('tap');
+            if (isHost) {
+                processSubmitVote(myId, targetId);
+            } else {
+                hostConn.send({ type: 'SUBMIT_VOTE', voterId: myId, targetId: targetId });
+            }
+        };
+
+        function processSubmitVote(voterId, targetId) {
+            roomData.votes[voterId] = targetId;
+
+            const totalVoters = Object.keys(roomData.players).length;
+            const votedCount = Object.keys(roomData.votes).length;
+
+            addLog(`${roomData.players[voterId].name} が投票しました。(${votedCount}/${totalVoters})`);
+
+            if (votedCount >= totalVoters) {
+                evaluateVotingResult();
+            } else {
+                broadcastState();
+            }
+        }
+
+        // 半数以上（50%以上）ルールに基づく追放判定
+        function evaluateVotingResult() {
+            const totalVoters = Object.keys(roomData.players).length;
+            const threshold = Math.ceil(totalVoters * 0.5); // 50%以上 (4人の場合は2票以上)
+
+            const voteCounts = {};
+            Object.values(roomData.votes).forEach(targetId => {
+                voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+            });
+
+            // 50%以上の票を獲得したプレイヤーをすべて抽出
+            const executedPlayerIds = [];
+            Object.entries(voteCounts).forEach(([pId, count]) => {
+                if (count >= threshold) {
+                    executedPlayerIds.push(pId);
+                }
+            });
+
+            const fakeId = roomData.fakeArtistId;
+
+            // 追放対象の中に「エセ芸術家」が含まれているか判定
+            if (executedPlayerIds.includes(fakeId)) {
+                // エセ芸術家が追放された -> 逆転タイムへ移行！
+                roomData.status = 'FAKE_GUESS';
+                const fakePlayer = roomData.players[fakeId];
+                addLog(`🚨 エセ芸術家 (${fakePlayer ? fakePlayer.name : ''}) が半数以上の票を獲得し追放されました！口頭逆転タイムに入ります！`);
+            } else {
+                // エセ芸術家が吊られなかった -> エセ芸術家チームの勝利！
+                finishRoundResult('FAKE', false);
+            }
+            broadcastState();
+        }
+
+        window.hostJudgeFakeAnswer = function(isCorrect) {
+            playSound('tap');
+            if (!isHost) return;
+            processHostJudgeFake(isCorrect);
+        };
+
+        function processHostJudgeFake(isCorrect) {
+            if (isCorrect) {
+                // エセ芸術家がお題を正しく言えた -> エセ芸術家の逆転勝利！
+                finishRoundResult('FAKE', true);
+            } else {
+                // 不正解だった -> 本物の芸術家チームの勝利！
+                finishRoundResult('ARTIST', false);
+            }
+        }
+
+        function finishRoundResult(winnerTeam, fakeGuessed) {
+            const fakeId = roomData.fakeArtistId;
+            const fakePlayer = roomData.players[fakeId];
+
+            // Assign Scores
+            Object.values(roomData.players).forEach(p => {
+                if (winnerTeam === 'FAKE') {
+                    if (p.id === fakeId) p.score += 2; // Fake Artist +2
+                } else {
+                    if (p.id !== fakeId) p.score += 1; // Real Artists +1
+                }
+            });
+
+            roomData.lastResult = {
+                winnerTeam: winnerTeam,
+                fakeGuessed: fakeGuessed,
+                fakeArtistName: fakePlayer ? fakePlayer.name : 'エセ芸術家'
+            };
+
+            roomData.status = 'ROUND_RESULT';
+            addLog(`🏆 ゲーム決着！勝者チーム: ${winnerTeam === 'FAKE' ? 'エセ芸術家' : '本物の芸術家チーム'}`);
+            broadcastState();
+        }
+
+        window.returnToLobby = function() {
+            playSound('tap');
+            if (isHost) {
+                processReturnToLobby();
+            } else {
+                hostConn.send({ type: 'RETURN_TO_LOBBY' });
+            }
+        };
+
+        function processReturnToLobby() {
+            roomData.status = 'LOBBY';
+            roomData.sharedStrokes = [];
+            roomData.votes = {};
+            roomData.lastResult = null;
+            addLog(`🏠 ロビーに戻りました。次のゲームの準備をしてください！`);
+            broadcastState();
+        }
+
+        window.updateLobbyTopicSettings = function() {
+            if (!isHost) return;
+            const genreSelect = document.getElementById('lobbyGenreSelect');
+            if (genreSelect) roomData.selectedGenre = genreSelect.value;
+            broadcastState();
+        };
+
+        // --- RENDER ENGINE ---
+
+        function renderRoomState() {
+            if (!roomData) return;
+
+            const isHostUser = roomData.hostId === myId;
+            const isFakeArtist = roomData.fakeArtistId === myId;
+
+            // Render Lobby Host Settings
+            const hostLobbySettings = document.getElementById('hostLobbySettings');
+            if (hostLobbySettings) {
+                if (isHostUser && roomData.status === 'LOBBY') {
+                    hostLobbySettings.classList.remove('hidden');
+                } else {
+                    hostLobbySettings.classList.add('hidden');
+                }
+            }
+
+            // Sync Lobby Selector Controls
+            const genreSelect = document.getElementById('lobbyGenreSelect');
+            if (genreSelect && roomData.selectedGenre) genreSelect.value = roomData.selectedGenre;
+
+            // Render Color Selection Palette in Lobby
+            const colorPaletteEl = document.getElementById('lobbyColorPalette');
+            if (colorPaletteEl) {
+                colorPaletteEl.innerHTML = '';
+                const myCurrentColor = roomData.players[myId] ? roomData.players[myId].color : '';
+                const usedColors = Object.values(roomData.players).map(p => p.color);
+
+                PLAYER_COLORS.forEach(hex => {
+                    const isMyColor = hex === myCurrentColor;
+                    const isTaken = usedColors.includes(hex) && !isMyColor;
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.onclick = () => { if (!isTaken) selectMyColor(hex); };
+                    btn.disabled = isTaken;
+                    
+                    btn.className = `w-8 h-8 rounded-full border-2 transition transform relative flex items-center justify-center ${isMyColor ? 'ring-2 ring-pink-400 scale-110 border-white' : isTaken ? 'opacity-25 cursor-not-allowed border-slate-700' : 'hover:scale-105 border-slate-500/50'}`;
+                    btn.style.backgroundColor = hex;
+
+                    if (isMyColor) {
+                        btn.innerHTML = '<i class="fa-solid fa-check text-white text-xs drop-shadow"></i>';
+                    } else if (isTaken) {
+                        btn.innerHTML = '<i class="fa-solid fa-lock text-slate-400 text-[10px]"></i>';
+                    }
+
+                    colorPaletteEl.appendChild(btn);
+                });
+            }
+
+            // Render Header Scores
+            const scoreListEl = document.getElementById('headerScoreList');
+            if (scoreListEl) {
+                scoreListEl.innerHTML = '';
+                Object.values(roomData.players).forEach(p => {
+                    const tag = document.createElement('div');
+                    tag.className = "bg-slate-900/90 px-3 py-1.5 rounded-2xl border text-xs font-black flex items-center gap-1.5 shadow";
+                    tag.style.borderColor = `${p.color}60`;
+                    tag.innerHTML = `
+                        <span class="w-2.5 h-2.5 rounded-full" style="background-color:${p.color}"></span>
+                        <span class="text-slate-100">${escapeHtml(p.name)}:</span>
+                        <span class="text-amber-300 font-mono text-sm">${p.score}pt</span>
+                    `;
+                    scoreListEl.appendChild(tag);
+                });
+            }
+
+            // LOBBY VIEW
+            if (roomData.status === 'LOBBY') {
+                showView('viewRoomLobby');
+
+                const startBtn = document.getElementById('startGameBtn');
+                const waitingMsg = document.getElementById('waitingForHostMsg');
+
+                if (isHostUser) {
+                    if (startBtn) startBtn.classList.remove('hidden');
+                    if (waitingMsg) waitingMsg.classList.add('hidden');
+                } else {
+                    if (startBtn) startBtn.classList.add('hidden');
+                    if (waitingMsg) waitingMsg.classList.remove('hidden');
+                }
+
+                const playerList = document.getElementById('playerList');
+                if (playerList) {
+                    playerList.innerHTML = '';
+                    const playersArray = Object.values(roomData.players);
+                    document.getElementById('playerCount').innerText = playersArray.length;
+
+                    playersArray.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = "flex items-center justify-between bg-slate-950/80 border p-3 rounded-2xl";
+                        div.style.borderColor = `${p.color}50`;
+                        div.innerHTML = `
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border shadow" style="background-color:${p.color}; border-color:${p.color}">
+                                    ${escapeHtml(p.name.charAt(0))}
+                                </div>
+                                <span class="font-bold text-sm text-slate-100">${escapeHtml(p.name)}</span>
+                            </div>
+                            ${p.isHost ? '<span class="text-[10px] font-bold bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full border border-pink-400/30">ホスト</span>' : ''}
+                        `;
+                        playerList.appendChild(div);
+                    });
+                }
+
+            } else {
+                // GAME PLAYING VIEWS
+                showView('viewGame');
+
+                const phaseBadge = document.getElementById('phaseBadge');
+                const roleBadge = document.getElementById('myRoleBadge');
+                const qCatBadge = document.getElementById('topicCategoryBadge');
+                const qTopic = document.getElementById('questionTopic');
+                const qGuide = document.getElementById('topicGuide');
+
+                if (isFakeArtist) {
+                    roleBadge.innerText = '🕵️ エセ芸術家';
+                    roleBadge.className = 'font-black text-sm md:text-base text-pink-400 animate-pulse';
+                } else {
+                    roleBadge.innerText = '🎨 本物の芸術家';
+                    roleBadge.className = 'font-black text-sm md:text-base text-purple-300';
+                }
+
+                qCatBadge.innerText = `ジャンル: ${roomData.category || '未設定'}`;
+
+                if (isFakeArtist) {
+                    qTopic.innerText = "「 ✕ (お題不明) 」";
+                    qGuide.innerText = "※あなたにはお題が隠されています！周りの描いた線からお題を推理しバレないように描いてください！";
+                } else {
+                    qTopic.innerText = `「${roomData.topic || '-----'}」`;
+                    qGuide.innerText = "※エセ芸術家にお題がバレないよう、絶妙なラインで1本ずつ描き込んでください！";
+                }
+
+                document.getElementById('currentRoundText').innerText = roomData.drawingRound || 1;
+
+                // Sub views handling
+                const subDrawing = document.getElementById('subViewDrawing');
+                const subVoting = document.getElementById('subViewVoting');
+                const subFakeGuess = document.getElementById('subViewFakeGuess');
+                const subResult = document.getElementById('subViewRoundResult');
+
+                subDrawing.classList.add('hidden');
+                subVoting.classList.add('hidden');
+                subFakeGuess.classList.add('hidden');
+                subResult.classList.add('hidden');
+
+                if (roomData.status === 'DRAWING') {
+                    phaseBadge.innerText = `PHASE: お絵かき (${roomData.drawingRound}周目)`;
+                    subDrawing.classList.remove('hidden');
+
+                    const activeDrawerId = roomData.drawingOrder[roomData.currentTurnIndex];
+                    const activeDrawer = roomData.players[activeDrawerId];
+
+                    document.getElementById('currentTurnPlayerName').innerText = activeDrawer ? activeDrawer.name : '--';
+                    const colorInd = document.getElementById('playerColorIndicator');
+                    if (colorInd && activeDrawer) {
+                        colorInd.style.backgroundColor = activeDrawer.color;
+                    }
+
+                    // Drawer controls visibility
+                    const drawerControls = document.getElementById('drawerControls');
+                    if (activeDrawerId === myId) {
+                        drawerControls.classList.remove('hidden');
+                        document.getElementById('drawInstructionText').innerText = "あなたのターンです！キャンバスに「一筆」だけ描いて確定してください。";
+                    } else {
+                        drawerControls.classList.add('hidden');
+                        document.getElementById('drawInstructionText').innerText = `${activeDrawer ? activeDrawer.name : ''} さんのターンです。描かれる線に注目しましょう！`;
+                    }
+
+                    // Color Badges List
+                    const colorList = document.getElementById('playerColorList');
+                    colorList.innerHTML = '';
+                    roomData.drawingOrder.forEach(pId => {
+                        const p = roomData.players[pId];
+                        if (!p) return;
+                        const isCurrent = pId === activeDrawerId;
+                        const tag = document.createElement('div');
+                        tag.className = `px-3 py-1 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${isCurrent ? 'ring-2 ring-pink-400 bg-slate-800' : 'bg-slate-900 opacity-70'}`;
+                        tag.style.borderColor = p.color;
+                        tag.innerHTML = `
+                            <span class="w-3 h-3 rounded-full" style="background-color:${p.color}"></span>
+                            <span class="text-white">${escapeHtml(p.name)}</span>
+                        `;
+                        colorList.appendChild(tag);
+                    });
+
+                    redrawSharedCanvas();
+
+                } else if (roomData.status === 'VOTING') {
+                    phaseBadge.innerText = "PHASE: 議論・見破り投票";
+                    subVoting.classList.remove('hidden');
+
+                    const canvasImg = document.getElementById('voteCanvasImage');
+                    if (canvasImg && canvas) canvasImg.src = canvas.toDataURL();
+
+                    const candidatesList = document.getElementById('voteCandidatesList');
+                    candidatesList.innerHTML = '';
+                    
+                    const hasVoted = !!roomData.votes[myId];
+
+                    Object.values(roomData.players).forEach(p => {
+                        const btn = document.createElement('button');
+                        btn.onclick = () => submitVote(p.id);
+                        btn.disabled = hasVoted || p.id === myId; // 自分以外に投票可能
+                        btn.className = `p-3 rounded-2xl border font-bold text-xs flex items-center justify-between transition ${hasVoted ? 'opacity-50 cursor-not-allowed' : 'hover:border-pink-400 bg-slate-900'} ${roomData.votes[myId] === p.id ? 'ring-2 ring-pink-400 border-pink-400' : 'border-purple-500/20'}`;
+                        btn.innerHTML = `
+                            <span class="text-white">${escapeHtml(p.name)}</span>
+                            <span class="text-[10px] text-purple-300">${p.id === myId ? '(自分)' : '投票'}</span>
+                        `;
+                        candidatesList.appendChild(btn);
+                    });
+
+                    // Voting status
+                    document.getElementById('voteSubmittedCount').innerText = Object.keys(roomData.votes).length;
+                    document.getElementById('totalVotersCount').innerText = Object.keys(roomData.players).length;
+
+                    const statusList = document.getElementById('votingStatusList');
+                    statusList.innerHTML = '';
+                    Object.values(roomData.players).forEach(p => {
+                        const voted = !!roomData.votes[p.id];
+                        const tag = document.createElement('span');
+                        tag.className = `text-[10px] px-2.5 py-1 rounded-full font-bold border ${voted ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-slate-800 text-purple-300/50 border-purple-500/20'}`;
+                        tag.innerText = `${p.name}: ${voted ? '投票済み ✓' : '選択中…'}`;
+                        statusList.appendChild(tag);
+                    });
+
+                } else if (roomData.status === 'FAKE_GUESS') {
+                    phaseBadge.innerText = "PHASE: 口頭逆転タイム";
+                    subFakeGuess.classList.remove('hidden');
+
+                    const hostControls = document.getElementById('hostJudgeControls');
+                    const clientWaitMsg = document.getElementById('clientWaitJudgeMsg');
+
+                    if (isHostUser) {
+                        hostControls.classList.remove('hidden');
+                        clientWaitMsg.classList.add('hidden');
+                    } else {
+                        hostControls.classList.add('hidden');
+                        clientWaitMsg.classList.remove('hidden');
+                    }
+
+                } else if (roomData.status === 'ROUND_RESULT') {
+                    phaseBadge.innerText = "PHASE: 結果発表";
+                    subResult.classList.remove('hidden');
+
+                    const res = roomData.lastResult;
+                    const banner = document.getElementById('roundResultBanner');
+
+                    if (res) {
+                        if (res.winnerTeam === 'FAKE') {
+                            playSound('fail');
+                            banner.innerHTML = `
+                                <span class="px-3.5 py-1 bg-pink-500/20 text-pink-300 border border-pink-400/30 rounded-full text-xs font-bold uppercase">GAME RESULT</span>
+                                <h3 class="text-3xl font-black text-pink-400">🕵️ エセ芸術家チームの勝利！</h3>
+                                <p class="text-sm text-purple-100 font-bold">正解のお題: 「<span class="text-amber-300">${roomData.topic}</span>」</p>
+                                <p class="text-xs text-purple-300/80">
+                                    エセ芸術家: <strong class="text-white">${res.fakeArtistName}</strong>
+                                    ${res.fakeGuessed ? '<br><span class="text-amber-300 font-bold">🎯 口頭回答で見事にお題を当て、逆転勝利しました！</span>' : '<br>追放を回避（または半数以上を獲得させず）して勝利しました！'}
+                                </p>
+                            `;
+                        } else {
+                            playSound('success');
+                            if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                            banner.innerHTML = `
+                                <span class="px-3.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full text-xs font-bold uppercase">GAME RESULT</span>
+                                <h3 class="text-3xl font-black text-emerald-300">🎨 本物の芸術家チームの勝利！</h3>
+                                <p class="text-sm text-purple-100 font-bold">正解のお題: 「<span class="text-amber-300">${roomData.topic}</span>」</p>
+                                <p class="text-xs text-purple-300/80">
+                                    エセ芸術家 (<strong class="text-white">${res.fakeArtistName}</strong>) を追放し、口頭の逆転回答も阻止しました！
+                                </p>
+                            `;
+                        }
+                    }
+
+                    // Vote Details
+                    const voteDetails = document.getElementById('roundVoteDetails');
+                    voteDetails.innerHTML = '';
+                    Object.entries(roomData.votes).forEach(([voterId, targetId]) => {
+                        const voter = roomData.players[voterId];
+                        const target = roomData.players[targetId];
+                        if (voter && target) {
+                            const line = document.createElement('div');
+                            line.innerHTML = `<span class="font-bold text-white">${escapeHtml(voter.name)}</span> ➔ <span class="text-pink-300 font-bold">${escapeHtml(target.name)}</span> に投票`;
+                            voteDetails.appendChild(line);
+                        }
+                    });
+
+                    const resImg = document.getElementById('resultCanvasImage');
+                    if (resImg && canvas) resImg.src = canvas.toDataURL();
+
+                    const hostCtrl = document.getElementById('hostNextRoundControls');
+                    const clientMsg = document.getElementById('clientNextRoundMsg');
+
+                    if (isHostUser) {
+                        hostCtrl.classList.remove('hidden');
+                        clientMsg.classList.add('hidden');
+                    } else {
+                        hostCtrl.classList.add('hidden');
+                        clientMsg.classList.remove('hidden');
+                    }
+                }
+
+                renderActionLogs();
+            }
+        }
+
+        function renderActionLogs() {
+            const logList = document.getElementById('actionLogList');
+            if (!logList) return;
+
+            if (!roomData.logs || roomData.logs.length === 0) {
+                logList.innerHTML = '<div class="text-slate-500 text-center py-2">ログはまだありません</div>';
+                return;
+            }
+
+            logList.innerHTML = '';
+            roomData.logs.forEach((logText, idx) => {
+                const div = document.createElement('div');
+                div.className = `flex items-center gap-2 ${idx === 0 ? 'text-purple-300 font-bold' : 'text-purple-200/60'}`;
+                div.innerHTML = `
+                    <span class="text-[10px] text-pink-400 font-mono">●</span>
+                    <span>${escapeHtml(logText)}</span>
+                `;
+                logList.appendChild(div);
+            });
+        }
+
+        window.toggleSound = function() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (icon) {
+                if (soundEnabled) icon.className = "fa-solid fa-volume-high";
+                else icon.className = "fa-solid fa-volume-xmark text-rose-400";
+            }
+        };
+
+        window.copyRoomCode = function() {
+            if (!roomCode) return;
+            navigator.clipboard.writeText(roomCode);
+            showNotice("📋", "コピー完了", `合言葉 [ ${roomCode} ] をコピーしました！`, 1500);
+        };
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnCreate = document.getElementById('btnCreateRoom');
+            const btnJoin = document.getElementById('btnJoinRoom');
+
+            if (btnCreate) btnCreate.addEventListener('click', handleCreateRoom);
+            if (btnJoin) btnJoin.addEventListener('click', handleJoinRoom);
         });
-
-
-      let maxCnt = 0;
-
-
-      Object.values(counts)
-        .forEach(cnt => {
-
-          if (cnt > maxCnt) {
-
-            maxCnt = cnt;
-
-          }
-
-        });
-
-
-      const topVotedIds =
-        Object.keys(counts)
-          .filter(
-            id =>
-              counts[id] === maxCnt
-          );
-
-
-      const insider =
-        players.find(
-          p =>
-            p.role === "インサイダー"
-        );
-
-
-      const isSuccess =
-        topVotedIds.includes(
-          insider.id
-        );
-
-
-      const finalPlayersResult =
-        players.map(p => {
-
-          const votedTargetId =
-            votes[p.id];
-
-          const votedTarget =
-            players.find(
-              x =>
-                x.id === votedTargetId
-            );
-
-
-          return {
-
-            ...p,
-
-            votedToId:
-              votedTargetId,
-
-            votedToName:
-              votedTarget
-                ? votedTarget.name
-                : "未投票"
-
-          };
-
-        });
-
-
-      const resultPayload = {
-
-        type: "SHOW_RESULT",
-
-        isTimeout: false,
-
-        isSuccess:
-          isSuccess,
-
-        insiderId:
-          insider.id,
-
-        insiderName:
-          insider.name,
-
-        secretWord:
-          secretWord,
-
-        allPlayersResult:
-          finalPlayersResult
-
-      };
-
-
-      broadcast(
-        resultPayload
-      );
-
-    }
-
-  }
-
-
-  function updateVoteProgressUI(
-    votedCount,
-    totalCount,
-    votedPlayerIds
-  ) {
-
-    document.getElementById(
-      "vote-count-display"
-    ).innerText =
-      `${votedCount} / ${totalCount}`;
-
-
-    const listEl =
-      document.getElementById(
-        "vote-status-list"
-      );
-
-
-    listEl.innerHTML =
-      players.map(p => {
-
-        const hasVoted =
-          votedPlayerIds.includes(
-            p.id
-          );
-
-
-        const statusText =
-          hasVoted
-            ? "✓ 投票済み"
-            : "投票中...";
-
-
-        const badgeClass =
-          hasVoted
-            ? "status-badge done"
-            : "status-badge";
-
-
-        return `
-          <span class="${badgeClass}">
-            ${p.name}: ${statusText}
-          </span>
-        `;
-
-      }).join("");
-
-  }
-
-
-  function triggerTimeOutResult() {
-
-    const insider =
-      players.find(
-        p =>
-          p.role === "インサイダー"
-      );
-
-
-    const finalPlayersResult =
-      players.map(p => ({
-
-        ...p,
-
-        votedToId: null,
-
-        votedToName:
-          "時間切れのため未投票"
-
-      }));
-
-
-    broadcast({
-
-      type: "SHOW_RESULT",
-
-      isTimeout: true,
-
-      isSuccess: false,
-
-      insiderId:
-        insider.id,
-
-      insiderName:
-        insider.name,
-
-      secretWord:
-        secretWord,
-
-      allPlayersResult:
-        finalPlayersResult
-
-    });
-
-  }
-
-
-  function showResultScreen(data) {
-
-    clearInterval(
-      questionTimerInterval
-    );
-
-    clearInterval(
-      discussionTimerInterval
-    );
-
-
-    document.getElementById(
-      "screen-vote"
-    ).style.display = "none";
-
-    document.getElementById(
-      "screen-question"
-    ).style.display = "none";
-
-    document.getElementById(
-      "screen-result"
-    ).style.display = "block";
-
-
-    const titleEl =
-      document.getElementById(
-        "result-winner-title"
-      );
-
-
-    const subEl =
-      document.getElementById(
-        "result-winner-sub"
-      );
-
-
-    document.getElementById(
-      "result-secret-word"
-    ).innerText =
-      data.secretWord;
-
-
-    if (data.isTimeout) {
-
-      titleEl.innerText =
-        "💀 全員の敗北...";
-
-      titleEl.style.color =
-        "var(--danger-color)";
-
-      subEl.innerText =
-        `時間内にお題に辿り着けませんでした。
-        （インサイダー: 「${data.insiderName}」）`;
-
-    }
-
-
-    else if (data.isSuccess) {
-
-      titleEl.innerText =
-        "🎉 庶民・マスター陣営の勝利！";
-
-      titleEl.style.color =
-        "var(--success-color)";
-
-      subEl.innerText =
-        `見事にインサイダー
-        （「${data.insiderName}」）を見破り追放しました！`;
-
-    }
-
-
-    else {
-
-      titleEl.innerText =
-        "🕵️ インサイダーの勝利！";
-
-      titleEl.style.color =
-        "var(--danger-color)";
-
-      subEl.innerText =
-        `追放失敗...
-        インサイダー
-        （「${data.insiderName}」）は潜伏に成功しました！`;
-
-    }
-
-
-    const tbody =
-      document.getElementById(
-        "result-table-body"
-      );
-
-
-    tbody.innerHTML =
-      data.allPlayersResult
-        .map(p => {
-
-          let roleColor =
-            "var(--text-color)";
-
-
-          if (
-            p.role === "インサイダー"
-          ) {
-
-            roleColor =
-              "var(--danger-color)";
-
-          }
-
-
-          if (
-            p.role === "マスター"
-          ) {
-
-            roleColor =
-              "var(--gold-main)";
-
-          }
-
-
-          return `
-            <tr>
-
-              <td>
-                <strong>「${p.name}」</strong>
-              </td>
-
-              <td
-                style="
-                  color:${roleColor};
-                  font-weight:bold;
-                "
-              >
-                ${p.role}
-              </td>
-
-              <td>
-                👉 「${p.votedToName}」
-              </td>
-
-            </tr>
-          `;
-
-        })
-        .join("");
-
-
-
-    if (isHost) {
-
-      document.getElementById(
-        "host-replay-panel"
-      ).style.display = "block";
-
-    } else {
-
-      document.getElementById(
-        "host-replay-panel"
-      ).style.display = "none";
-
-    }
-
-  }
-
-
-  function requestReplay() {
-
-    if (isHost) {
-
-      broadcast({
-        type: "RETURN_TO_ROOM"
-      });
-
-    }
-
-  }
-
-
-  function returnToRoom() {
-
-    myRole = "";
-
-    secretWord = "";
-
-    votes = {};
-
-
-    document.getElementById(
-      "screen-result"
-    ).style.display = "none";
-
-
-    document.getElementById(
-      "screen-room"
-    ).style.display = "block";
-
-
-    log(
-      "待機ルームに戻りました。"
-    );
-
-  }
-
-</script>
-
+    </script>
 </body>
 </html>
